@@ -131,7 +131,6 @@ def calculate(clock, period, exact):
 
 def args_processing():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
-    parser.add_argument('-e', '--example', nargs=1, help='Find an example with specified word')
     parser.add_argument('--getperiod', action='store_true', help='Calculate timer period from parameters')
     parser.add_argument('--calctim', action='store_true', help='Calculate timer parameters')
     parser.add_argument('--exact', action='store_true', help='Find parameters that match desired period exactly')
@@ -151,7 +150,7 @@ def main():
     args = args_processing()
     if args.getperiod:
         period = calculateTimerFreq(args.clock[0], args.psc[0], args.arr[0])
-        print("Timer set to {}ms [{}Hz]".format(period, 1 / (period / 1000)))
+        print("Timer period {}ms [{}Hz]".format(1 / (period / 1000), period))
 
     if args.calctim:
         if None in [args.clock]:
