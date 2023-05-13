@@ -19,7 +19,9 @@ TOLERANCE = 0.0001
 
 DESCRIPTION = """STM32 timer calculator
         --------------------------------------------------------------
-
+        This script takes the clock frequency and target frequency as inputs, and outputs the prescaler and period values that can be used to configure a timer on the STM32 microcontroller to achieve the desired frequency.
+        The script uses a combination of exact and approximate calculations to generate a list of possible values, which are sorted by error rate and prescaler value to give the user the most accurate and efficient options.
+        The output is presented in a pandas dataframe, with columns for prescaler, period, frequency, error rate, and exactness. The user can then choose the combination that best fits their needs.
         --------------------------------------------------------------
         """
 
@@ -129,46 +131,112 @@ def calculate(clock, period, exact):
     return df
 
 
-def args_processing():
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
-    parser.add_argument('--getperiod', action='store_true', help='Calculate timer period from parameters')
-    parser.add_argument('--calctim', action='store_true', help='Calculate timer parameters')
-    parser.add_argument('--exact', action='store_true', help='Find parameters that match desired period exactly')
-    parser.add_argument('--clock', nargs=1, type=int, help='Timer APB clock in Herz')
-    parser.add_argument('--hz', nargs=1, type=int, help='Timer period in Herz')
-    parser.add_argument('--ms', nargs=1, type=int, help='Timer period in ms')
-    parser.add_argument('--s', nargs=1, type=int, help='Timer period in seconds')
-    parser.add_argument('--arr', nargs=1, type=int, help='ARR value')
-    parser.add_argument('--psc', nargs=1, type=int, help='PSC value')
-    parser.add_argument('--top', nargs=1, type=int, help='Get top N results')
+def parse_clock_freq(clock_freq_str):
+    clock_freq_str = clock_freq_str.strip().lower()
+    suffixes = {
+        'hz': 1,
+        'khz': 1000,
+        'mhz': 1000000,
+        'ghz': 1000000000
+    }
+    if clock_freq_str.isdigit():
+        return int(clock_freq_str)
+    for suffix, multiplier in suffixes.items():
+        if clock_freq_str.endswith(suffix):
+            prefix = clock_freq_str[:-len(suffix)]
+            if prefix.isdigit():
+                return int(prefix) * multiplier
+    raise ValueError("Invalid clock frequency: %s" % clock_freq_str)
 
-    processed_args = parser.parse_args()
-    return processed_args
+
+
+def parse_time(time_str):
+    """Convert a human-readable time string to its corresponding number of seconds."""
+    if time_str.isdigit():
+        # The input is already a number, assume it's in seconds
+        return int(time_str)
+    elif time_str.endswith("sec"):
+        # Time in seconds
+        return int(time_str[:-3])
+    elif time_str.endswith("m"):
+        # Time in seconds
+        return int(time_str[:-1]) * 60.0
+    elif time_str.endswith("h"):
+        # Time in seconds
+        return int(time_str[:-1]) * 3600.0
+    elif time_str.endswith("ms"):
+        # Time in milliseconds
+        return int(time_str[:-2]) / 1000.0
+    elif time_str.endswith("us"):
+        # Time in microseconds
+        return int(time_str[:-2]) / 1000000.0
+    elif time_str.endswith("ns"):
+        # Time in nanoseconds
+        return int(time_str[:-2]) / 1000000000.0
+    else:
+        raise ValueError("Invalid time format: %s" % time_str)
+
+
+def args_processing(parser):
+    parser = argparse.ArgumentParser(description="Calculate STM32 timer period and frequency.")
+    parser.add_argument("--period", help="Calculate the timer period from ARR and PSC", action="store_true")
+    parser.add_argument("--strict", help="Show only values for timer period without error", action="store_true")
+    parser.add_argument("--top", help="Get only this number of results", type=lambda x: int(x, 0))
+    parser.add_argument("--tim", help="Calculate the timer ARR, PSC for specified clock frequency", action="store_true")
+    parser.add_argument("--arr", help="Timer auto-reload value, 16bit", type=lambda x: int(x, 0))
+    parser.add_argument("--psc", help="Timer prescaler value, 16bit", type=lambda x: int(x, 0))
+    parser.add_argument("--clock", required=True, help="Timer clock frequency (Hz or human-readable string)")
+    parser.add_argument("--time", help="Timer period (seconds or human-readable string)")
+
+    return parser.parse_known_args()
+
+
+def calcperiod(clock, arr, prescaler):
+    clock = parse_clock_freq(clock)
+    print("Calculating period for clock={}, arr={}, psc={}".format(clock, arr, prescaler))
+    period = calculateTimerFreq(clock, prescaler, arr)
+    if period != 0:
+        print("Timer period {:.2f}ms [{:.1f}Hz]".format(1.0 / (period / 1000.0), period))
+    else:
+        print("Period = 0. Impossible to calculate.")    
+
+
+def calctim(clock, period_sec, exact, top):
+    clock = parse_clock_freq(clock)
+    period = parse_time(period_sec)
+
+    if 0 == period:
+        print("Period = 0. Impossible to calculate.")
+        return
+    
+    period = 1 / period
+    
+    print("Calculating a timer for clock={}Hz, period={}Hz".format(clock, period))
+    output = calculate(clock, period, True)
+    if exact:
+        output = output.loc[output['EXACT'] == 'YES']
+    if top:
+        output = output.sort_values('PSC', ascending=False).head(top)
+    print(output.to_string(index=False))
 
 
 def main():
-    args = args_processing()
-    if args.getperiod:
-        period = calculateTimerFreq(args.clock[0], args.psc[0], args.arr[0])
-        print("Timer period {}ms [{}Hz]".format(1 / (period / 1000), period))
-
-    if args.calctim:
-        if None in [args.clock]:
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=DESCRIPTION)
+    args, leftovers = args_processing(parser)
+    clock = parse_clock_freq(args.clock[0])
+    if args.period:
+        if None in [args.clock, args.psc, args.arr]:
+            parser.print_help()
             return
-        period = 0
-        if args.ms:
-            period = 1.0 / (args.ms[0] / 1000.0)
-        elif args.s:
-            period = 1.0 / args.s[0]
-        elif args.hz:
-            period = args.hz[0]
+        calcperiod(args.clock, args.arr, args.psc)
+        return
 
-        output = calculate(args.clock[0], period, True)
-        if args.exact:
-            output = output.loc[output['EXACT'] == 'YES']
-        if args.top:
-            output = output.sort_values('PSC', ascending=False).head(args.top[0])
-        print(output.to_string())
+    if args.tim:
+        if None in [args.clock, args.time]:
+            parser.print_help()
+            return
+        
+        calctim(args.clock, args.time, args.strict, args.top)       
 
 
 if __name__ == '__main__':
