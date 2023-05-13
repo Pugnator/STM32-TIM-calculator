@@ -13,11 +13,11 @@ This is a script that helps calculate the prescaler and period values for a time
 TIM clock = 100MHz, timer period 1 second, get only precise valuses, top 3
 
 ```
-python TIMcalc.py --tim --clock=100MHz --time=1sec --top=3 --strict
+python TIMcalc.py --tim --clock=100MHz --time=1sec --top=3 --exact
 
 Calculating a timer for clock=100000000Hz, period=1Hz
 
-PSC    ARR      FREQ         ERROR EXACT
+PSC    ARR      FREQ       ERROR     EXACT
 9999   9999  1.000000  0.0000000000   YES
 9998  10000  1.000000  0.0000000000   YES
 9997  10001  1.000000  0.0000000000   YES
@@ -39,7 +39,7 @@ options:
 
   -h, --help     show this help message and exit
   --period       Calculate the timer period from ARR and PSC
-  --strict       Show only values for timer period without error
+  --exact        Show only values giving no error
   --top     	 Get only this number of results
   --tim          Calculate the timer ARR, PSC for specified clock frequency
   --arr	         Timer auto-reload value, 16bit

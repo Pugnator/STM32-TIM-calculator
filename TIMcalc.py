@@ -155,14 +155,17 @@ def parse_time(time_str):
     if time_str.isdigit():
         # The input is already a number, assume it's in seconds
         return int(time_str)
+    elif time_str.endswith("hz"):
+        # Time in herzes
+        return 1.0 / int(time_str[:-2])
     elif time_str.endswith("sec"):
         # Time in seconds
         return int(time_str[:-3])
     elif time_str.endswith("m"):
-        # Time in seconds
+        # Time in minutes
         return int(time_str[:-1]) * 60.0
     elif time_str.endswith("h"):
-        # Time in seconds
+        # Time in hours
         return int(time_str[:-1]) * 3600.0
     elif time_str.endswith("ms"):
         # Time in milliseconds
@@ -180,7 +183,7 @@ def parse_time(time_str):
 def args_processing(parser):
     parser = argparse.ArgumentParser(description="Calculate STM32 timer period and frequency.")
     parser.add_argument("--period", help="Calculate the timer period from ARR and PSC", action="store_true")
-    parser.add_argument("--strict", help="Show only values for timer period without error", action="store_true")
+    parser.add_argument("--exact", help="Show only values giving no error", action="store_true")
     parser.add_argument("--top", help="Get only this number of results", type=lambda x: int(x, 0))
     parser.add_argument("--tim", help="Calculate the timer ARR, PSC for specified clock frequency", action="store_true")
     parser.add_argument("--arr", help="Timer auto-reload value, 16bit", type=lambda x: int(x, 0))
@@ -236,7 +239,7 @@ def main():
             parser.print_help()
             return
         
-        calctim(args.clock, args.time, args.strict, args.top)       
+        calctim(args.clock, args.time, args.exact, args.top)       
 
 
 if __name__ == '__main__':
