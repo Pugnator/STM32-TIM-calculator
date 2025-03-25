@@ -1,5 +1,9 @@
 # STM32 Timer Calculator
 
+![Timer formulae](formulae.png)
+
+![Timer Diagram](scheme.jpg)
+
 ## Overview
 This script is for calculating STM32 timer values, including prescaler (PSC) and auto-reload register (ARR) values.  
 It helps determine appropriate timer configurations for achieving a desired time period when you're lazy enough.
