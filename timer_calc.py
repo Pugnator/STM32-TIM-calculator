@@ -16,6 +16,7 @@ def parse_clock_freq(clock_freq_str):
     
     raise ValueError(f"Invalid clock frequency format: {clock_freq_str}")
 
+
 def parse_time(time_str):
     match = re.match(r"(\d+(?:\.\d+)?)([mun]?[sS]?)", time_str)
     if match:
@@ -28,11 +29,14 @@ def parse_time(time_str):
     
     raise ValueError(f"Invalid time format: {time_str}")
 
+
 def perfect_divisors(n):
     return [i for i in range(1, n+1) if n % i == 0]
 
+
 def possible_prescaler_value(clock_freq):
     return perfect_divisors(clock_freq)
+
 
 def calctim(clock_freq, target_time, exact, top):
     best_diff = float('inf')
@@ -80,6 +84,7 @@ def calcperiod(clock, arr, prescaler):
     else:
         print("Period = 0. Impossible to calculate.")
 
+
 def main():
     parser = argparse.ArgumentParser(description="STM32 timer calculator", add_help=False)
     parser.add_argument("--clock", type=str, help="Timer clock frequency (e.g., 72MHz)")
@@ -114,7 +119,7 @@ def main():
         return
     
     
-    
+    parser.print_help()
 
 if __name__ == "__main__":
     main()
