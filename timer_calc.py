@@ -38,7 +38,7 @@ def possible_prescaler_value(clock_freq):
     return perfect_divisors(clock_freq)
 
 
-def calctim(clock_freq, target_time, exact, top):
+def calc_timer(clock_freq, target_time, exact, top):
     best_diff = float('inf')
     best_psc, best_arr, best_real_time = None, None, None
     results = []
@@ -68,17 +68,17 @@ def calctim(clock_freq, target_time, exact, top):
     return df
 
 
-def calculateTimerFreq(clock, psc, arr):
+def calculate_timer_freq(clock, psc, arr):
     if None in [clock, psc, arr]:
         return None
 
     return clock / ((psc + 1) * (arr + 1))
 
 
-def calcperiod(clock, arr, prescaler):
+def calc_period(clock, arr, prescaler):
     clock = parse_clock_freq(clock)
     print("Calculating period for clock={}, arr={}, psc={}".format(clock, arr, prescaler))
-    period = calculateTimerFreq(clock, prescaler, arr)
+    period = calculate_timer_freq(clock, prescaler, arr)
     if period != 0:
         print("Timer period {:.2f}ms [{:.1f}Hz]".format(1.0 / (period / 1000.0), period))
     else:
@@ -105,7 +105,7 @@ def main():
 
         clock_freq = parse_clock_freq(args.clock)
         target_time = parse_time(args.time)
-        df = calctim(clock_freq, target_time, args.exact, args.top)
+        df = calc_timer(clock_freq, target_time, args.exact, args.top)
         print(df.to_string(index=False))
         return
     
@@ -115,7 +115,7 @@ def main():
             parser.print_help()
             return
         
-        calcperiod(args.clock, args.arr, args.psc)
+        calc_period(args.clock, args.arr, args.psc)
         return
     
     

@@ -1,6 +1,6 @@
 import unittest
 import subprocess
-from timer_calc import parse_clock_freq, parse_time, calctim, calculateTimerFreq
+from timer_calc import parse_clock_freq, parse_time, calc_timer, calculate_timer_freq
 
 class TestTimerCalc(unittest.TestCase):
     
@@ -27,12 +27,12 @@ class TestTimerCalc(unittest.TestCase):
         result = subprocess.run(
             ['python', 'timer_calc.py', '--period', '--clock', '72MHz', '--time', '1ms', '--psc', '99000', '--arr', '-1'],
             capture_output=True, text=True)
-        self.assertIn("Error", result.stdout)
+        self.assertIn("ValueError", result.stdout)
 
 
     def test_division_by_zero(self):
         try:
-            calculateTimerFreq(72000000, -1, -1)
+            calculate_timer_freq(72000000, -1, -1)
         except ValueError:
             pass
         except Exception as e:
@@ -40,12 +40,12 @@ class TestTimerCalc(unittest.TestCase):
 
 
     def test_calculateTimerFreq(self):
-        self.assertEqual(calculateTimerFreq(72000000, 71, 999), 1000.0)
-        self.assertEqual(calculateTimerFreq(1000000, 3, 249), 1000.0)
+        self.assertEqual(calculate_timer_freq(72000000, 71, 999), 1000.0)
+        self.assertEqual(calculate_timer_freq(1000000, 3, 249), 1000.0)
 
 
     def test_calctim(self):
-        df = calctim(72000000, 0.001, exact=False, top=3)
+        df = calc_timer(72000000, 0.001, exact=False, top=3)
         self.assertFalse(df.empty)
         self.assertIn("PSC", df.columns)
         self.assertIn("ARR", df.columns)
