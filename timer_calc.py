@@ -10,9 +10,12 @@ def parse_clock_freq(clock_freq_str: str) -> int:
         value, unit = match.groups()
         value = float(value)
         unit = unit.lower()
-        
+        if not unit and clock_freq_str[-1].isdigit():
+            raise ValueError("Unknown measurement unit")
+            
         unit_map = {"hz": 1, "khz": 1e3, "mhz": 1e6, "ghz": 1e9}
         multiplier = unit_map.get(unit, 1)
+        print(f"Mult = {multiplier}")
         return int(value * multiplier)
     
     raise ValueError(f"Invalid clock frequency format: {clock_freq_str}")
@@ -72,8 +75,17 @@ def calc_timer(clock_freq: int, target_time: int, exact: bool, top: int) -> pd.D
 def calculate_timer_freq(clock: int, psc: int, arr: int) -> float:
     if None in [clock, psc, arr]:
         return None
-
-    return clock / ((psc + 1) * (arr + 1))
+    if clock<=0:
+        raise ValueError(f"Invalid clock frequency format: {clock_freq_str}")
+    
+    divisor = (psc+1) * (arr+1)
+    if divisor<=0:
+        raise ValueError(f"Invalid PSC and ARR values")
+    
+    if psc>65535 or arr>65535: #65535 would overflow the register
+        raise ValueError("PSC and ARR should be 16-bit values")
+    
+    return clock / divisor
 
 
 def calc_period(clock: int, arr: int, prescaler: int) -> None:
@@ -103,9 +115,19 @@ def main():
         if args.clock is None or args.time is None:
             print("Error: --clock and --time are required")
             parser.print_help()
-
-        clock_freq = parse_clock_freq(args.clock)
-        target_time = parse_time(args.time)
+          
+        try:
+            clock_freq = parse_clock_freq(args.clock)
+        except ValueError as e:
+            print("Invalid value for clock frequency -  Proper usage: '--clock=72MHz'")
+            return
+        
+        try:
+            target_time = parse_time(args.time)
+        except ValueError as e:
+            print("Invalid value for target time -  Proper usage: '--time=500us'")
+            return
+            
         df = calc_timer(clock_freq, target_time, args.exact, args.top)
         print(df.to_string(index=False))
         return
@@ -115,8 +137,11 @@ def main():
             print("Error: --clock, --arr, --psc are required")
             parser.print_help()
             return
-        
-        calc_period(args.clock, args.arr, args.psc)
+        try:
+            calc_period(args.clock, args.arr, args.psc)
+        except ValueError as e:
+            print("Invalid value for PSC and ARR")
+            return
         return
     
     
