@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import re
 
-def parse_clock_freq(clock_freq_str):
+
+def parse_clock_freq(clock_freq_str: str) -> int:
     match = re.match(r"(\d+(?:\.\d+)?)([kKmMgG]?[hHzZ]*)", clock_freq_str)
     if match:
         value, unit = match.groups()
@@ -17,7 +18,7 @@ def parse_clock_freq(clock_freq_str):
     raise ValueError(f"Invalid clock frequency format: {clock_freq_str}")
 
 
-def parse_time(time_str):
+def parse_time(time_str: str) -> float:
     match = re.match(r"(\d+(?:\.\d+)?)([mun]?[sS]?)", time_str)
     if match:
         value, unit = match.groups()
@@ -30,15 +31,15 @@ def parse_time(time_str):
     raise ValueError(f"Invalid time format: {time_str}")
 
 
-def perfect_divisors(n):
+def perfect_divisors(n: int) -> list:
     return [i for i in range(1, n+1) if n % i == 0]
 
 
-def possible_prescaler_value(clock_freq):
+def possible_prescaler_value(clock_freq: int) -> list:
     return perfect_divisors(clock_freq)
 
 
-def calc_timer(clock_freq, target_time, exact, top):
+def calc_timer(clock_freq: int, target_time: int, exact: bool, top: int) -> pd.DataFrame:
     best_diff = float('inf')
     best_psc, best_arr, best_real_time = None, None, None
     results = []
@@ -68,14 +69,14 @@ def calc_timer(clock_freq, target_time, exact, top):
     return df
 
 
-def calculate_timer_freq(clock, psc, arr):
+def calculate_timer_freq(clock: int, psc: int, arr: int) -> float:
     if None in [clock, psc, arr]:
         return None
 
     return clock / ((psc + 1) * (arr + 1))
 
 
-def calc_period(clock, arr, prescaler):
+def calc_period(clock: int, arr: int, prescaler: int) -> None:
     clock = parse_clock_freq(clock)
     print("Calculating period for clock={}, arr={}, psc={}".format(clock, arr, prescaler))
     period = calculate_timer_freq(clock, prescaler, arr)
