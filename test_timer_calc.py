@@ -27,7 +27,7 @@ class TestTimerCalc(unittest.TestCase):
         result = subprocess.run(
             ['python', 'timer_calc.py', '--period', '--clock', '72MHz', '--time', '1ms', '--psc', '99000', '--arr', '-1'],
             capture_output=True, text=True)
-        self.assertIn("ValueError", result.stdout)
+        self.assertIn("Invalid value for PSC and ARR", result.stdout)
 
 
     def test_division_by_zero(self):
