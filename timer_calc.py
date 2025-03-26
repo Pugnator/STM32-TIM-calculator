@@ -1,6 +1,5 @@
 import argparse
-import pandas as pd
-import numpy as np
+from pprint import pprint
 import re
 
 
@@ -42,7 +41,7 @@ def perfect_divisors(n: int) -> list:
     return [i for i in range(1, n+1) if n % i == 0 and i > 0 and i < 65534]
 
 
-def calc_timer(clock_freq: int, target_time: int, exact: bool, top: int) -> pd.DataFrame:
+def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
     best_diff = float('inf')
     best_psc, best_arr, best_real_time = None, None, None
     results = []
@@ -50,26 +49,24 @@ def calc_timer(clock_freq: int, target_time: int, exact: bool, top: int) -> pd.D
     for psc in perfect_divisors(clock_freq):
         psc_clock = clock_freq / psc
         arr = round(target_time * psc_clock)
-        
+
         if 1 <= arr <= 65534:
             real_time = arr / psc_clock
             diff = abs(real_time - target_time)
-            results.append((psc, arr, real_time))
-            
+            results.append({"PSC": psc, "ARR": arr, "Real Time": real_time, "Error (ms)": round((real_time - target_time) * 1000, 3)})
+
             if diff < best_diff:
                 best_psc, best_arr, best_real_time = psc, arr, real_time
                 best_diff = diff
-    
-    df = pd.DataFrame(results, columns=["PSC", "ARR", "Real Time"])
-    df["Error (ms)"] = (df["Real Time"] - target_time) * 1000
-    df = df.sort_values("Error (ms)", ascending=True)
-    
+
+    results.sort(key=lambda x: abs(x["Error (ms)"]))
+
     if exact:
-        df = df[df["Real Time"] == target_time]
+        results = [r for r in results if r["Real Time"] == target_time]
     if top:
-        df = df.head(top)
+        results = results[:top]
     
-    return df
+    return results
 
 
 def calculate_timer_freq(clock: int, psc: int, arr: int) -> float:
@@ -125,10 +122,10 @@ def main():
             return
             
         df = calc_timer(clock_freq, target_time, args.exact, args.top)
-        if df.empty:
+        if not df:
             print("No possible PSC and ARR found for your input")
             return
-        print(df.to_string(index=False))
+        pprint(df)
         return
     
     if args.period:

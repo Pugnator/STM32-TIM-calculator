@@ -46,7 +46,7 @@ class TestTimerCalc(unittest.TestCase):
 
     def test_calctim(self):
         df = calc_timer(72000000, 0.001, exact=False, top=3)
-        self.assertFalse(df.empty)
+        self.assertTrue(df)
         self.assertIn("PSC", df.columns)
         self.assertIn("ARR", df.columns)
         self.assertIn("Real Time", df.columns)
