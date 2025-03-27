@@ -5,29 +5,36 @@ import re
 
 
 def parse_clock_freq(clock_freq_str: str) -> int:
-    match = re.match(r"(\d+(?:\.\d+)?)([kKmMgG]?[hHzZ]*)", clock_freq_str)
+    match = re.match(r"(\d+(?:\.\d+)?)([kKmMgG]?[hH][zZ])?$", clock_freq_str)
     if match:
         value, unit = match.groups()
         value = float(value)
-        unit = unit.lower()
         
         unit_map = {"hz": 1, "khz": 1e3, "mhz": 1e6, "ghz": 1e9}
-        multiplier = unit_map.get(unit, 1)
-        return int(value * multiplier)
-    
+        normalized_unit = (unit or "Hz").lower()
+        
+        if normalized_unit not in unit_map:
+            raise ValueError(f"Invalid clock frequency unit: {unit}")
+        
+        return int(value * unit_map[normalized_unit])
+
     raise ValueError(f"Invalid clock frequency format: {clock_freq_str}")
 
 
 def parse_time(time_str: str) -> float:
-    match = re.match(r"(\d+(?:\.\d+)?)([mun]?[sS]?)", time_str)
+    match = re.match(r"(\d+(?:\.\d+)?)(min|[mun]?[sS])?$", time_str)
     if match:
         value, unit = match.groups()
         value = float(value)
-        
-        unit_map = {"s": 1, "ms": 1e-3, "us": 1e-6, "ns": 1e-9}
-        multiplier = unit_map.get(unit, 1)
-        return value * multiplier
-    
+
+        unit_map = {"min": 60, "s": 1, "ms": 1e-3, "us": 1e-6, "ns": 1e-9}
+        normalized_unit = unit.lower() if unit else "s"
+
+        if normalized_unit not in unit_map:
+            raise ValueError(f"Invalid time unit: {unit}")
+
+        return value * unit_map[normalized_unit]
+
     raise ValueError(f"Invalid time format: {time_str}")
 
 
