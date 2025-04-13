@@ -1,6 +1,5 @@
 import argparse
-import pandas as pd
-import numpy as np
+from pprint import pprint
 import re
 
 
@@ -39,48 +38,47 @@ def parse_time(time_str: str) -> float:
 
 
 def perfect_divisors(n: int) -> list:
-    return [i for i in range(1, n+1) if n % i == 0]
+    return [i for i in range(1, n+1) if n % i == 0 and i > 0 and i < 65534]
 
 
-def possible_prescaler_value(clock_freq: int) -> list:
-    return perfect_divisors(clock_freq)
-
-
-def calc_timer(clock_freq: int, target_time: int, exact: bool, top: int) -> pd.DataFrame:
+def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
     best_diff = float('inf')
     best_psc, best_arr, best_real_time = None, None, None
     results = []
     
-    for psc in possible_prescaler_value(clock_freq):
+    for psc in perfect_divisors(clock_freq):
         psc_clock = clock_freq / psc
         arr = round(target_time * psc_clock)
-        
-        if 1 <= arr <= 65535:
+
+        if 1 <= arr <= 65534:
             real_time = arr / psc_clock
             diff = abs(real_time - target_time)
-            results.append((psc, arr, real_time))
-            
+            results.append({"PSC": psc, "ARR": arr, "Real Time": real_time, "Error (ms)": round((real_time - target_time) * 1000, 3)})
+
             if diff < best_diff:
                 best_psc, best_arr, best_real_time = psc, arr, real_time
                 best_diff = diff
-    
-    df = pd.DataFrame(results, columns=["PSC", "ARR", "Real Time"])
-    df["Error (ms)"] = (df["Real Time"] - target_time) * 1000
-    df = df.sort_values("Error (ms)", ascending=True)
-    
+
+    results.sort(key=lambda x: abs(x["Error (ms)"]))
+
     if exact:
-        df = df[df["Real Time"] == target_time]
+        results = [r for r in results if r["Real Time"] == target_time]
     if top:
-        df = df.head(top)
+        results = results[:top]
     
-    return df
+    return results
 
 
 def calculate_timer_freq(clock: int, psc: int, arr: int) -> float:
-    if None in [clock, psc, arr]:
-        return None
+    if clock <= 0:
+        raise ValueError(f"Invalid clock frequency: {clock}")
 
-    return clock / ((psc + 1) * (arr + 1))
+    if psc < 0 or psc > 65534 or arr < 0 or arr > 65534:
+        raise ValueError("PSC and ARR should be 16-bit values (0-65534)")
+
+    divisor = (psc + 1) * (arr + 1)
+
+    return clock / divisor
 
 
 def calc_period(clock: int, arr: int, prescaler: int) -> None:
@@ -94,7 +92,7 @@ def calc_period(clock: int, arr: int, prescaler: int) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="STM32 timer calculator", add_help=False)
+    parser = argparse.ArgumentParser(description="STM32 timer calculator")
     parser.add_argument("--clock", type=str, help="Timer clock frequency (e.g., 72MHz)")
     parser.add_argument("--time", type=str, help="Target timer period (e.g., 1ms, 500us)")
     parser.add_argument("--arr", help="Timer auto-reload value, 16bit", type=lambda x: int(x, 0))
@@ -110,11 +108,24 @@ def main():
         if args.clock is None or args.time is None:
             print("Error: --clock and --time are required")
             parser.print_help()
-
-        clock_freq = parse_clock_freq(args.clock)
-        target_time = parse_time(args.time)
+          
+        try:
+            clock_freq = parse_clock_freq(args.clock)
+        except ValueError as e:
+            print("Invalid value for clock frequency -  Proper usage: '--clock=72MHz'")
+            return
+        
+        try:
+            target_time = parse_time(args.time)
+        except ValueError as e:
+            print("Invalid value for target time -  Proper usage: '--time=500us'")
+            return
+            
         df = calc_timer(clock_freq, target_time, args.exact, args.top)
-        print(df.to_string(index=False))
+        if not df:
+            print("No possible PSC and ARR found for your input")
+            return
+        pprint(df)
         return
     
     if args.period:
@@ -122,8 +133,11 @@ def main():
             print("Error: --clock, --arr, --psc are required")
             parser.print_help()
             return
-        
-        calc_period(args.clock, args.arr, args.psc)
+        try:
+            calc_period(args.clock, args.arr, args.psc)
+        except ValueError as e:
+            print("Invalid value for PSC and ARR")
+            return
         return
     
     
