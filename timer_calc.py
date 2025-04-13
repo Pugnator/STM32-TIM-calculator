@@ -49,8 +49,7 @@ def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
         arr = round(target_time * psc_clock)
 
         if 1 <= arr <= 65534:
-            real_time = arr / psc_clock
-            diff = abs(real_time - target_time)
+            real_time = arr / psc_clock            
             results.append({"PSC": psc, "ARR": arr, "Real Time": real_time, "Error (ms)": round((real_time - target_time) * 1000, 3)})
 
     results.sort(key=lambda x: abs(x["Error (ms)"]))
