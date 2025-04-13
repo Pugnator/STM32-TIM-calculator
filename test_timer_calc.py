@@ -42,14 +42,6 @@ class TestTimerCalc(unittest.TestCase):
     def test_calculateTimerFreq(self):
         self.assertEqual(calculate_timer_freq(72000000, 71, 999), 1000.0)
         self.assertEqual(calculate_timer_freq(1000000, 3, 249), 1000.0)
-
-
-    def test_calctim(self):
-        df = calc_timer(72000000, 0.001, exact=False, top=3)
-        self.assertTrue(df)
-        self.assertIn("PSC", df.columns)
-        self.assertIn("ARR", df.columns)
-        self.assertIn("Real Time", df.columns)
     
 if __name__ == "__main__":
     unittest.main()

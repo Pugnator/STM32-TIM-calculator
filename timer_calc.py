@@ -42,8 +42,6 @@ def perfect_divisors(n: int) -> list:
 
 
 def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
-    best_diff = float('inf')
-    best_psc, best_arr, best_real_time = None, None, None
     results = []
     
     for psc in perfect_divisors(clock_freq):
@@ -54,10 +52,6 @@ def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
             real_time = arr / psc_clock
             diff = abs(real_time - target_time)
             results.append({"PSC": psc, "ARR": arr, "Real Time": real_time, "Error (ms)": round((real_time - target_time) * 1000, 3)})
-
-            if diff < best_diff:
-                best_psc, best_arr, best_real_time = psc, arr, real_time
-                best_diff = diff
 
     results.sort(key=lambda x: abs(x["Error (ms)"]))
 
@@ -112,7 +106,7 @@ def main():
         try:
             clock_freq = parse_clock_freq(args.clock)
         except ValueError as e:
-            print("Invalid value for clock frequency -  Proper usage: '--clock=72MHz'")
+            print(f'Invalid value for clock frequency -  Proper usage: "--clock=72MHz": {e}')
             return
         
         try:
