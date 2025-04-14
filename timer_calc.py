@@ -17,8 +17,6 @@ def parse_clock_freq(clock_freq_str: str) -> int:
         
         return int(value * unit_map[normalized_unit])
 
-    raise ValueError(f"Invalid clock frequency format: {clock_freq_str}")
-
 
 def parse_time(time_str: str) -> float:
     match = re.match(r"(\d+(?:\.\d+)?)(min|[mun]?[sS])?$", time_str)
@@ -32,13 +30,11 @@ def parse_time(time_str: str) -> float:
         if normalized_unit not in unit_map:
             raise ValueError(f"Invalid time unit: {unit}")
 
-        return value * unit_map[normalized_unit]
-
-    raise ValueError(f"Invalid time format: {time_str}")
+        return value * unit_map[normalized_unit]    
 
 
 def perfect_divisors(n: int) -> list:
-    return [i for i in range(1, n+1) if n % i == 0 and i > 0 and i < 65534]
+    return [i for i in range(1, n+1) if n % i == 0 and i > 0]
 
 
 def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
@@ -48,7 +44,7 @@ def calc_timer(clock_freq: int, target_time: float, exact: bool, top: int):
         psc_clock = clock_freq / psc
         arr = round(target_time * psc_clock)
 
-        if 1 <= arr <= 65534:
+        if 1 <= arr:
             real_time = arr / psc_clock            
             results.append({"PSC": psc, "ARR": arr, "Real Time": real_time, "Error (ms)": round((real_time - target_time) * 1000, 3)})
 
@@ -97,22 +93,9 @@ def main():
     
     args = parser.parse_args()
 
-    if args.tim:
-        if args.clock is None or args.time is None:
-            print("Error: --clock and --time are required")
-            parser.print_help()
-          
-        try:
-            clock_freq = parse_clock_freq(args.clock)
-        except ValueError as e:
-            print(f'Invalid value for clock frequency -  Proper usage: "--clock=72MHz": {e}')
-            return
-        
-        try:
-            target_time = parse_time(args.time)
-        except ValueError as e:
-            print("Invalid value for target time -  Proper usage: '--time=500us'")
-            return
+    if args.tim:        
+        clock_freq = parse_clock_freq(args.clock)        
+        target_time = parse_time(args.time)   
             
         df = calc_timer(clock_freq, target_time, args.exact, args.top)
         if not df:
@@ -122,15 +105,7 @@ def main():
         return
     
     if args.period:
-        if None in [args.clock, args.psc, args.arr]:
-            print("Error: --clock, --arr, --psc are required")
-            parser.print_help()
-            return
-        try:
-            calc_period(args.clock, args.arr, args.psc)
-        except ValueError as e:
-            print("Invalid value for PSC and ARR")
-            return
+        calc_period(args.clock, args.arr, args.psc)        
         return
     
     
